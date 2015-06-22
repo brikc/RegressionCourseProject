@@ -1,0 +1,272 @@
+---
+title: "Transmission Type and MPG"
+date: "May 11, 2015"
+output: html_document
+---
+
+#### Executive Summary
+
+This report answers the question of whether an automatic or manual transmission is better for MPG.  Additionally, this report uses linear regression to quantify the MPG difference between automatic and manual transmissions. After using stepwise backwards elimination for model selection and running diagnostics on the selected model, I have determined that a manual transmission is better for gas mileage. This can be quantified as a 3.47 increase in miles per gallon over an automatic transmission, with all other variables held constant.
+
+#### Analysis
+
+<b>Exploratory Analysis</b>:  Since we are specifically interested in how transmission type affects gas mileage, I used a boxplot (Figure 1) and a histogram (Figure 2) for exploratory analysis.  Figure 1 shows us that there is a clear difference between the median and IQR for transmission type. Automatic transmissions appear to yield lower miles per gallon than manual transmissions. Figure 2 shows us that the distribution for automatic transmission and mpg is more clearly unimodal than the distribution for manual transmission.
+
+<b>Model Selection</b>:  Next, I determined which variables to include to get the strongest model. The data set available to answer this question has 11 variables, including miles per gallon (mpg). I performed stepwise model selection, specifically: backwards elimination using adjusted R^2^ and backwards elimination using p-value.
+
+<b>Backwards Elimination with Adjusted R^2^</b>:  During this process, I started with a model that included all variables -- mpg as the reponse and the other 10 as predictors. I recorded the R^2^ for this initial model (0.8066423) and then dropped one variable at a time and compared the adjusted R^2^ of each smaller model. Of these smaller models, I chose the model with the highest increase in adjusted R^2^ and then repeated the process, dropping one variable at a time, until none of the smaller models resulted in an increase.  
+
+Furthermore, I went through this process twice. Since transmission type (am) is of specific interest, I first performed this backwards elimination by keeping the "am" variable in the model.  I then repeated the entire backwards elimination, allowing the "am" variable to be a candidate for removal.  Both processes produced the same model with the strongest R^2^ (0.8375334), and the "am" variable was included in both models.  This gave me some reassurance that transmission type is a significant varible. The resulting model: final <- lm(mpg~disp+hp+wt+qsec+am,mtcars)
+
+<b>Backwards Elimination with P-values</b>:  I was also interested to understand how using p-value might change the resulting model.  Similar to the process above, I started with a model that included all variables, examined the p-values for each slope and dropped the variable with the highest p-value. I then repeated this process with the smaller model, until all variables reflected p-values of significance (less than .05). This process resulted in a model that, again, includes the "am" variable, but did not match the model resulting from R^2^ elimination. The resulting model: fit<-lm(mpg~am+wt+qsec,mtcars)
+
+<b>Model Selection Decision</b>:  When deciding between the model from R^2^ elimination versus p-value elimination, I chose to use R^2^ elimination model. The p-value approach is useful to determine which predictors are statistically significant, but adjusted R^2^ is used for more reliable predictions.
+
+<b>Diagnostics</b>:  Next, I performed some diagnostics against the model I had selected.  First I looked for any linear relationships that might exist between my response variable (mpg) and the other numerical variables in the model. For the model to be valid, there should be a linear relationship. This is checked by plotting the residuals against each predictor variable and confirming there is random scatter around 0. Figure 3-5 shows the residuals plotted against each of the three numerical variables in the model (hp, wt, qsec) and each reflects the random scatter we would hope to see. Finally, the Normal Q-Q Plot confirms that the residuals are, for the most part, normally distributed with the largest deviations only at the tails.
+
+<b>Final Analysis</b>:  After determining a model and performing diagnostics to confirm its validity, I examined the model's coefficients to try and quantify the mpg difference between transmission types. The summary of this model is available in the appendix.  Based on both the exploratory analysis and the supporting linear model, I conclude that manual transmission is better for mpg.  Holding all other variables constant, a manual transmission will provide a 3.47 increase in miles per gallon over an automatic transmission. The p-value of this model (1.844e-10) is very small, making it statistically significant. The multiple R^2^ is the proportion of variability in mpg explained by the model, so the unexplained variability in this model is 0.1363 (1-.8637).
+
+
+**************
+#### Appendix
+```{r fig.width=10, echo=FALSE, warning=FALSE, message=FALSE}
+data(mtcars)
+library(ggplot2)
+library(grid)
+# Add a column of factors that label auto versus manual (0 versus 1)
+mtcars$transmission <- factor(mtcars$am,levels=c(0,1),labels=c("Automatic","Manual")) 
+# boxplot
+p1 = ggplot(mtcars)+geom_boxplot(aes(x=transmission,y=mpg))+ggtitle("Figure 1: Boxplot")
+# histogram
+p2 = ggplot(mtcars, aes(x=mpg, fill=transmission)) + geom_histogram(alpha=.5, position="identity")+xlab("mpg")+ylab("count")+ggtitle("Figure 2: Histogram")
+pushViewport(viewport(layout = grid.layout(1, 2, widths=c(0.40,0.60))))
+print(p1, vp = viewport(layout.pos.row = 1, layout.pos.col = 1))
+print(p2, vp = viewport(layout.pos.row = 1, layout.pos.col = 2))
+```
+
+
+
+```{r echo=FALSE, include=FALSE}
+# Backwards Elimination with Adjusted R-squared, keeping "am"
+# Original fit, all variables
+fit<-lm(mpg~am+cyl+disp+hp+drat+wt+qsec+vs+gear+carb,mtcars)
+summary(fit)$adj.r.squared
+
+# Removal, round 1, keeping "am"
+rvals<-NULL
+rvals<-c(rvals,summary(lm(mpg~disp+hp+drat+wt+qsec+vs+am+gear+carb,mtcars))$adj.r.squared)
+rvals<-c(rvals,summary(lm(mpg~cyl+hp+drat+wt+qsec+vs+am+gear+carb,mtcars))$adj.r.squared)
+rvals<-c(rvals,summary(lm(mpg~cyl+disp+drat+wt+qsec+vs+am+gear+carb,mtcars))$adj.r.squared)
+rvals<-c(rvals,summary(lm(mpg~cyl+disp+hp+wt+qsec+vs+am+gear+carb,mtcars))$adj.r.squared)
+rvals<-c(rvals,summary(lm(mpg~cyl+disp+hp+drat+qsec+vs+am+gear+carb,mtcars))$adj.r.squared)
+rvals<-c(rvals,summary(lm(mpg~cyl+disp+hp+drat+wt+vs+am+gear+carb,mtcars))$adj.r.squared)
+rvals<-c(rvals,summary(lm(mpg~cyl+disp+hp+drat+wt+qsec+am+gear+carb,mtcars))$adj.r.squared)
+rvals<-c(rvals,summary(lm(mpg~cyl+disp+hp+drat+wt+qsec+vs+am+carb,mtcars))$adj.r.squared)
+rvals<-c(rvals,summary(lm(mpg~cyl+disp+hp+drat+wt+qsec+vs+am+gear,mtcars))$adj.r.squared)
+rvals
+max(rvals)
+
+# Removal, round 2, keeping "am"
+rvals<-NULL
+rvals<-c(rvals,summary(lm(mpg~hp+drat+wt+qsec+vs+am+gear+carb,mtcars))$adj.r.squared)
+rvals<-c(rvals,summary(lm(mpg~disp+drat+wt+qsec+vs+am+gear+carb,mtcars))$adj.r.squared)
+rvals<-c(rvals,summary(lm(mpg~disp+hp+wt+qsec+vs+am+gear+carb,mtcars))$adj.r.squared)
+rvals<-c(rvals,summary(lm(mpg~disp+hp+drat+qsec+vs+am+gear+carb,mtcars))$adj.r.squared)
+rvals<-c(rvals,summary(lm(mpg~disp+hp+drat+wt+vs+am+gear+carb,mtcars))$adj.r.squared)
+rvals<-c(rvals,summary(lm(mpg~disp+hp+drat+wt+qsec+am+gear+carb,mtcars))$adj.r.squared)
+rvals<-c(rvals,summary(lm(mpg~disp+hp+drat+wt+qsec+vs+am+carb,mtcars))$adj.r.squared)
+rvals<-c(rvals,summary(lm(mpg~disp+hp+drat+wt+qsec+vs+am+gear,mtcars))$adj.r.squared)
+rvals
+max(rvals)
+
+# Removal, round 3, keeping "am"
+rvals<-NULL
+rvals<-c(rvals,summary(lm(mpg~hp+drat+wt+qsec+am+gear+carb,mtcars))$adj.r.squared)
+rvals<-c(rvals,summary(lm(mpg~disp+drat+wt+qsec+am+gear+carb,mtcars))$adj.r.squared)
+rvals<-c(rvals,summary(lm(mpg~disp+hp+wt+qsec+am+gear+carb,mtcars))$adj.r.squared)
+rvals<-c(rvals,summary(lm(mpg~disp+hp+drat+qsec+am+gear+carb,mtcars))$adj.r.squared)
+rvals<-c(rvals,summary(lm(mpg~disp+hp+drat+wt+am+gear+carb,mtcars))$adj.r.squared)
+rvals<-c(rvals,summary(lm(mpg~disp+hp+drat+wt+qsec+am+carb,mtcars))$adj.r.squared)
+rvals<-c(rvals,summary(lm(mpg~disp+hp+drat+wt+qsec+am+gear,mtcars))$adj.r.squared)
+rvals
+max(rvals)
+
+# Removal, round 4, keeping "am"
+rvals=NULL
+rvals<-c(rvals,summary(lm(mpg~hp+drat+wt+qsec+am+gear,mtcars))$adj.r.squared)
+rvals<-c(rvals,summary(lm(mpg~disp+drat+wt+qsec+am+gear,mtcars))$adj.r.squared)
+rvals<-c(rvals,summary(lm(mpg~disp+hp+wt+qsec+am+gear,mtcars))$adj.r.squared)
+rvals<-c(rvals,summary(lm(mpg~disp+hp+drat+qsec+am+gear,mtcars))$adj.r.squared)
+rvals<-c(rvals,summary(lm(mpg~disp+hp+drat+wt+am+gear,mtcars))$adj.r.squared)
+rvals<-c(rvals,summary(lm(mpg~disp+hp+drat+wt+qsec+am,mtcars))$adj.r.squared)
+rvals
+max(rvals)
+
+# Removal, round 5, keeping "am"
+rvals=NULL
+rvals<-c(rvals,summary(lm(mpg~hp+drat+wt+qsec+am,mtcars))$adj.r.squared)
+rvals<-c(rvals,summary(lm(mpg~disp+drat+wt+qsec+am,mtcars))$adj.r.squared)
+rvals<-c(rvals,summary(lm(mpg~disp+hp+wt+qsec+am,mtcars))$adj.r.squared)
+rvals<-c(rvals,summary(lm(mpg~disp+hp+drat+qsec+am,mtcars))$adj.r.squared)
+rvals<-c(rvals,summary(lm(mpg~disp+hp+drat+wt+am,mtcars))$adj.r.squared)
+rvals
+max(rvals)
+
+# Removal, round 6, keeping "am"
+rvals=NULL
+rvals<-c(rvals,summary(lm(mpg~hp+wt+qsec+am,mtcars))$adj.r.squared)
+rvals<-c(rvals,summary(lm(mpg~disp+wt+qsec+am,mtcars))$adj.r.squared)
+rvals<-c(rvals,summary(lm(mpg~disp+hp+qsec+am,mtcars))$adj.r.squared)
+rvals<-c(rvals,summary(lm(mpg~disp+hp+wt+am,mtcars))$adj.r.squared)
+rvals
+max(rvals)
+
+## The resulting model yielding the strongest adjusted R-squared:
+summary(lm(mpg~disp+hp+wt+qsec+am,mtcars))$adj.r.squared
+
+```
+
+```{r echo=FALSE, include=FALSE}
+# Backwards Elimination with Adjusted R-squared, keeping "am"
+fit<-lm(mpg~am+cyl+disp+hp+drat+wt+qsec+vs+gear+carb,mtcars)
+summary(fit)$adj.r.squared
+
+# Removal, round 1, removing "am"
+rvals<-NULL
+rvals<-c(rvals,summary(lm(mpg~cyl+disp+hp+drat+wt+qsec+vs+gear+carb,mtcars))$adj.r.squared)
+rvals<-c(rvals,summary(lm(mpg~am+disp+hp+drat+wt+qsec+vs+gear+carb,mtcars))$adj.r.squared)
+rvals<-c(rvals,summary(lm(mpg~am+cyl+hp+drat+wt+qsec+vs+gear+carb,mtcars))$adj.r.squared)
+rvals<-c(rvals,summary(lm(mpg~am+cyl+disp+drat+wt+qsec+vs+gear+carb,mtcars))$adj.r.squared)
+rvals<-c(rvals,summary(lm(mpg~am+cyl+disp+hp+wt+qsec+vs+gear+carb,mtcars))$adj.r.squared)
+rvals<-c(rvals,summary(lm(mpg~am+cyl+disp+hp+drat+qsec+vs+gear+carb,mtcars))$adj.r.squared)
+rvals<-c(rvals,summary(lm(mpg~am+cyl+disp+hp+drat+wt+vs+gear+carb,mtcars))$adj.r.squared)
+rvals<-c(rvals,summary(lm(mpg~am+cyl+disp+hp+drat+wt+qsec+gear+carb,mtcars))$adj.r.squared)
+rvals<-c(rvals,summary(lm(mpg~am+cyl+disp+hp+drat+wt+qsec+vs+carb,mtcars))$adj.r.squared)
+rvals<-c(rvals,summary(lm(mpg~am+cyl+disp+hp+drat+wt+qsec+vs+gear,mtcars))$adj.r.squared)
+rvals
+max(rvals)
+
+# Removal, round 2, removing "am"
+rvals=NULL
+rvals<-c(rvals,summary(lm(mpg~disp+hp+drat+wt+qsec+vs+gear+carb,mtcars))$adj.r.squared)
+rvals<-c(rvals,summary(lm(mpg~am+hp+drat+wt+qsec+vs+gear+carb,mtcars))$adj.r.squared)
+rvals<-c(rvals,summary(lm(mpg~am+disp+drat+wt+qsec+vs+gear+carb,mtcars))$adj.r.squared)
+rvals<-c(rvals,summary(lm(mpg~am+disp+hp+wt+qsec+vs+gear+carb,mtcars))$adj.r.squared)
+rvals<-c(rvals,summary(lm(mpg~am+disp+hp+drat+qsec+vs+gear+carb,mtcars))$adj.r.squared)
+rvals<-c(rvals,summary(lm(mpg~am+disp+hp+drat+wt+vs+gear+carb,mtcars))$adj.r.squared)
+rvals<-c(rvals,summary(lm(mpg~am+disp+hp+drat+wt+qsec+gear+carb,mtcars))$adj.r.squared)
+rvals<-c(rvals,summary(lm(mpg~am+disp+hp+drat+wt+qsec+vs+carb,mtcars))$adj.r.squared)
+rvals<-c(rvals,summary(lm(mpg~am+disp+hp+drat+wt+qsec+vs+gear,mtcars))$adj.r.squared)
+rvals
+max(rvals)
+
+# Removal, round 3, removing "am"
+rvals=NULL
+rvals<-c(rvals,summary(lm(mpg~disp+hp+drat+wt+qsec+gear+carb,mtcars))$adj.r.squared)
+rvals<-c(rvals,summary(lm(mpg~am+hp+drat+wt+qsec+gear+carb,mtcars))$adj.r.squared)
+rvals<-c(rvals,summary(lm(mpg~am+disp+drat+wt+qsec+gear+carb,mtcars))$adj.r.squared)
+rvals<-c(rvals,summary(lm(mpg~am+disp+hp+wt+qsec+gear+carb,mtcars))$adj.r.squared)
+rvals<-c(rvals,summary(lm(mpg~am+disp+hp+drat+qsec+gear+carb,mtcars))$adj.r.squared)
+rvals<-c(rvals,summary(lm(mpg~am+disp+hp+drat+wt+gear+carb,mtcars))$adj.r.squared)
+rvals<-c(rvals,summary(lm(mpg~am+disp+hp+drat+wt+qsec+carb,mtcars))$adj.r.squared)
+rvals<-c(rvals,summary(lm(mpg~am+disp+hp+drat+wt+qsec+gear,mtcars))$adj.r.squared)
+rvals
+max(rvals)
+
+# Removal, round 4, removing "am"
+rvals=NULL
+rvals<-c(rvals,summary(lm(mpg~disp+hp+drat+wt+qsec+gear,mtcars))$adj.r.squared)
+rvals<-c(rvals,summary(lm(mpg~am+hp+drat+wt+qsec+gear,mtcars))$adj.r.squared)
+rvals<-c(rvals,summary(lm(mpg~am+disp+drat+wt+qsec+gear,mtcars))$adj.r.squared)
+rvals<-c(rvals,summary(lm(mpg~am+disp+hp+wt+qsec+gear,mtcars))$adj.r.squared)
+rvals<-c(rvals,summary(lm(mpg~am+disp+hp+drat+qsec+gear,mtcars))$adj.r.squared)
+rvals<-c(rvals,summary(lm(mpg~am+disp+hp+drat+wt+gear,mtcars))$adj.r.squared)
+rvals<-c(rvals,summary(lm(mpg~am+disp+hp+drat+wt+qsec,mtcars))$adj.r.squared)
+rvals
+max(rvals)
+
+# Removal, round 5, removing "am"
+rvals=NULL
+rvals<-c(rvals,summary(lm(mpg~disp+hp+drat+wt+qsec,mtcars))$adj.r.squared)
+rvals<-c(rvals,summary(lm(mpg~am+hp+drat+wt+qsec,mtcars))$adj.r.squared)
+rvals<-c(rvals,summary(lm(mpg~am+disp+drat+wt+qsec,mtcars))$adj.r.squared)
+rvals<-c(rvals,summary(lm(mpg~am+disp+hp+wt+qsec,mtcars))$adj.r.squared)
+rvals<-c(rvals,summary(lm(mpg~am+disp+hp+drat+qsec,mtcars))$adj.r.squared)
+rvals<-c(rvals,summary(lm(mpg~am+disp+hp+drat+wt,mtcars))$adj.r.squared)
+rvals
+max(rvals)
+
+# Removal, round 6, removing "am"
+rvals=NULL
+rvals<-c(rvals,summary(lm(mpg~disp+hp+wt+qsec,mtcars))$adj.r.squared)
+rvals<-c(rvals,summary(lm(mpg~am+hp+wt+qsec,mtcars))$adj.r.squared)
+rvals<-c(rvals,summary(lm(mpg~am+disp+wt+qsec,mtcars))$adj.r.squared)
+rvals<-c(rvals,summary(lm(mpg~am+disp+hp+qsec,mtcars))$adj.r.squared)
+rvals<-c(rvals,summary(lm(mpg~am+disp+hp+wt,mtcars))$adj.r.squared)
+rvals
+max(rvals)
+
+## The resulting model yielding the strongest adjusted R-squared:
+summary(lm(mpg~am+disp+hp+wt+qsec,mtcars))$adj.r.squared
+```
+
+
+
+
+```{r echo=FALSE, include=FALSE}
+# Backwards elimination using p-value, full model
+fit<-lm(mpg~am+cyl+disp+hp+drat+wt+qsec+vs+gear+carb,mtcars)
+summary(fit)
+
+# Removed "cyl"
+fit<-lm(mpg~am+disp+hp+drat+wt+qsec+vs+gear+carb,mtcars)
+summary(fit)
+
+# Removed "vs"
+fit<-lm(mpg~am+disp+hp+drat+wt+qsec+gear+carb,mtcars)
+summary(fit)
+
+# Removed "carb"
+fit<-lm(mpg~am+disp+hp+drat+wt+qsec+gear,mtcars)
+summary(fit)
+
+# Removed "gear"
+fit<-lm(mpg~am+disp+hp+drat+wt+qsec,mtcars)
+summary(fit)
+
+# Removed "drat"
+fit<-lm(mpg~am+disp+hp+wt+qsec,mtcars)
+summary(fit)
+
+# Removed "disp"
+fit<-lm(mpg~am+hp+wt+qsec,mtcars)
+summary(fit)
+
+# Removed "hp" - all slopes are at significance but intercept is not?
+fit<-lm(mpg~am+wt+qsec,mtcars)
+summary(fit)
+
+```
+
+```{r fig.width=10, fig.height=7, echo=FALSE, warning=FALSE, message=FALSE}
+final <- lm(mpg~am+disp+hp+wt+qsec,mtcars)
+par(mfrow=c(2,2))
+#plot(final$residuals ~ mtcars$am)
+plot(final$residuals ~ mtcars$hp)
+title(main="Figure 3")
+plot(final$residuals ~ mtcars$wt, title="Figure 4")
+title(main="Figure 4")
+plot(final$residuals ~ mtcars$qsec, title="Figure 5")
+title(main="Figure 5")
+qqnorm(final$residuals)
+qqline(final$residuals)
+```
+
+
+```{r}
+final <- lm(mpg~am+disp+hp+wt+qsec,mtcars)
+summary(final)
+```
+
+  
+  
